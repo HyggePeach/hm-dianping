@@ -7,8 +7,10 @@ import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -27,7 +29,12 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Resource
     private ISeckillVoucherService seckillVoucherService;
+
+    @Resource
+    private RedisIdWorker redisIdWorker;
+
     @Override
+    @Transactional
     public Result seckillVoucher(Long voucherId) {
         //查询优惠券
         SeckillVoucher voucher=seckillVoucherService.getById(voucherId);
@@ -47,7 +54,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if(!success) return Result.fail("库存不足");
         //一人一单逻辑
         Long userId=UserHolder.getUser().getId();
-        int count=query().eq("user_id",userId).eq("vocher_id",voucherId).count();
+        int count=query().eq("user_id",userId).eq("voucher_id",voucherId).count();
         if(count>0) return Result.fail("该用户已经购买过一次");
 
         //创建订单
