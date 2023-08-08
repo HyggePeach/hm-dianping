@@ -9,6 +9,7 @@ import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,18 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if(!success) return Result.fail("库存不足");
         //一人一单逻辑
         Long userId=UserHolder.getUser().getId();
+        //，因为你调用的方法，其实是this.的方式调用的,事务想要生效，还得利用代理来生效，
+        // 所以这个地方，我们需要获得原始的事务对象，来操作事务
+        synchronized (userId.toString().intern()) {
+            IVoucherOrderService proxy=(IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId);
+        }
+    }
+
+    @Transactional
+    public Result createVoucherOrder(Long voucherId){
+        Long userId=UserHolder.getUser().getId();
+
         int count=query().eq("user_id",userId).eq("voucher_id",voucherId).count();
         if(count>0) return Result.fail("该用户已经购买过一次");
 
